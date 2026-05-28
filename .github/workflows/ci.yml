@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
 
-# ─── ADD THIS PERMISSIONS BLOCK HERE ─────────────────────────────────
+# ─── ADD THIS PERMISSIONS BLOCK HERE ────────────────────────────────
 permissions:
   id-token: write  # This allows the runner to fetch a token from GitHub OIDC
   contents: read   # This allows actions/checkout to read your source code
