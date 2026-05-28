@@ -41,12 +41,20 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
+        # Clone the infrastructure manifest repository
         git clone https://${{ secrets.GITOPS_PAT }}@github.com/${{ github.repository_owner }}/azure-gitops-infra.git
         cd azure-gitops-infra/apps
         
-        sed -i "s|image: .*:placeholder|image: ${{ secrets.ACR_NAME }}.azurecr.io/gitops-app:${{ github.sha }}|g" deployment.yaml
-        git add deployment.yaml
-        git commit -m "Automated image tag update to ${{ github.sha }} [skip ci]"
-        git push origin main
+        # Robust regex replacement that finds 'image:' and replaces everything after it on that line
+        sed -i "s|image: .*|image: ${{ secrets.ACR_NAME }}.azurecr.io/gitops-app:${{ github.sha }}|g" deployment.yaml
+        
+        # Check if anything actually changed before trying to commit
+        if git diff --exit-code deployment.yaml; then
+          echo "No changes detected in deployment manifest. Skipping commit."
+        else
+          git add deployment.yaml
+          git commit -m "Automated image tag update to ${{ github.sha }} [skip ci]"
+          git push origin main
+        fi
 
        
