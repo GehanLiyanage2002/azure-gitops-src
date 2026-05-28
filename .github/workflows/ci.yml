@@ -1,0 +1,45 @@
+name: Build and Push to ACR
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Application Code
+      uses: actions/checkout@v3
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Log in to Azure Container Registry
+      run: |
+        az acr login --name ${{ secrets.ACR_NAME }}
+
+    - name: Build and Push Docker Image
+      run: |
+        IMAGE_TAG=${{ github.sha }}
+        REGISTRY_URL=${{ secrets.ACR_NAME }}.azurecr.io
+        
+        docker build -t $REGISTRY_URL/gitops-app:$IMAGE_TAG .
+        docker push $REGISTRY_URL/gitops-app:$IMAGE_TAG
+
+    # This steps connects to your INFRA repository and updates the image tag
+    - name: Update GitOps Manifest Image Tag
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        git clone https://${{ secrets.GITOPS_PAT }}@github.com/${{ github.repository_owner }}/azure-gitops-infra.git
+        cd azure-gitops-infra/apps
+        
+        # Safely updates the image tag using sed
+        sed -i "s|image: .*|image: ${{ secrets.ACR_NAME }}.azurecr.io/gitops-app:${{ github.sha }}|g" deployment.yaml
+        
+        git add deployment.yaml
+        git commit -m "Automated image tag update to ${{ github.sha }} [skip ci]"
+        git push origin main
