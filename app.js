@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.json({ 
         status: "success", 
-        message: "Welcome to my production GitOps Cluster on Azure!",
+        message: "Hello, this is GitOps Version 2!",
         version: "1.0.0" 
     });
 });
